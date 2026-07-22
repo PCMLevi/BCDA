@@ -43,7 +43,7 @@ params = {
     "_since": timestamp
 }
 
-TIMEOUT_SECONDS = 3600  # 1 hour max for polling
+TIMEOUT_SECONDS = 36000  # 1 hour max for polling
 
 # ============================================================
 # Authentication
