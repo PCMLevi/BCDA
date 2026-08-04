@@ -77,5 +77,8 @@ if __name__ == "__main__":
     ).deploy(
         name = 'V2-BCDA Pipeline',
         work_pool_name = 'default',
-        cron="0 22 * * 0",
+        schedule = {
+            'cron': "0 22 * * 0",
+            'timezone': "America/Chicago"
+        }
     )
