@@ -4,8 +4,9 @@ from sqlalchemy import text
 from pathlib import Path
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+from prefect import flow, task
 
 onedrive = next(p for p in Path(os.environ["USERPROFILE"]).iterdir()
                 if p.name.startswith("OneDrive - "))
@@ -33,11 +34,13 @@ logging.getLogger().addHandler(console_handler)
 # ----------------- DATA DIRECTORY -----------------
 data_dir = Path(r"C:\BCDA\Data")
 
+@task
 def start_sql_job():
     with engine_DEV_Final.begin() as conn:
         conn.execute(text("EXEC msdb.dbo.sp_start_job @job_name = :job"),
                 {"job": "BCDA_Run_ALL"})
 
+@task
 def unlink_files():
     for file in data_dir.iterdir():
         try:
@@ -46,7 +49,7 @@ def unlink_files():
         except Exception as e:
             logging.error(f"Failed to delete {file.name}: {e}")
 
-
+@task
 def run_module(name, func):
     try:
         func()
@@ -54,7 +57,7 @@ def run_module(name, func):
     except Exception as e:
         logging.exception(f"{name} failed with error: {e}")
         raise
-
+@flow(name = "V2-BCDA Orchestration Flow")
 def main():
     logging.info("Starting BCDA pipeline")
     run_module("BCDA API", BCDA_API.main)
@@ -66,4 +69,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    base_path = Path(r"C:\BCDA")
+    
+    main.from_source(
+        source = str(base_path),
+        entrypoint = "Scripts/bcda_orchestration.py:main",
+    ).deploy(
+        name = 'V2-BCDA Pipeline',
+        work_pool_name = 'default',
+        cron="0 22 * * 0",
+    )

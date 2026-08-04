@@ -18,4 +18,4 @@ print("HTTP Status:", response.status_code)
 try:
     print(response.json())  # actual job status
 except Exception:
-    print(response.text)    # fallback if not JSON
+    print(response.json())    # fallback if not JSON
